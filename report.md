@@ -40,7 +40,14 @@ At the current stage of the project, the focus is placed on the **binary anomaly
 
 ## 3. Dataset Description – NSL-KDD
 
-The project uses the **NSL-KDD dataset**, an improved version of the original KDD Cup 1999 dataset, designed to address redundancy and bias issues present in the original benchmark.
+The project uses the **NSL-KDD dataset**, an improved version of the original KDD Cup 1999 dataset, designed to address redundancy and bias issues present in the original benchmark. 
+
+**Key Findings:**
+* **Class Balance:** The dataset is relatively balanced (approx. 53% Normal vs. 47% Attack), reducing the immediate need for synthetic oversampling (SMOTE).
+* **Correlation Analysis:** A correlation matrix was computed to identify features most strongly associated with malicious activity. 
+    * We observed that traffic features related to **synchronization errors** (e.g., `dst_host_srv_serror_rate`, `serror_rate`) show a very strong positive correlation (>0.65) with attacks. This suggests that many attacks in the dataset (likely DoS or Probe) involve manipulating the TCP handshake process.
+    * Conversely, features like `same_srv_rate` showed negative correlation, indicating they are more typical of normal traffic.
+
 
 ### 3.1 Dataset Structure
 
@@ -61,6 +68,11 @@ The test set contains attack types that do not appear in the training set, simul
 
 The raw dataset files were loaded into Pandas DataFrames.  
 Since the files do not include column headers, feature names were manually defined according to the official NSL-KDD documentation.
+
+To prepare the data for machine learning algorithms, we implemented a robust preprocessing pipeline:
+1.  **Categorical Encoding:** Features such as `protocol_type`, `service`, and `flag` were transformed using **One-Hot Encoding**. Crucially, the encoder is configured to handle unknown categories in the test set to prevent runtime errors during inference.
+2.  **Feature Scaling:** Numerical features (e.g., `duration`, `src_bytes`) were standardized using `StandardScaler` to ensure that features with large ranges do not dominate the model's objective function.
+3.  **Target Mapping:** The 23 distinct attack labels were mapped into 5 major categories (Normal, DoS, Probe, R2L, U2R) to facilitate both binary and multi-class classification tasks.
 
 ### 4.1 Missing Values
 
