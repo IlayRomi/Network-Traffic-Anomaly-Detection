@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import time, uuid
 
 # Smooth auto-refresh without full-page meta refresh
 from streamlit_autorefresh import st_autorefresh
@@ -263,6 +264,36 @@ def main() -> None:
         st.markdown("## Filters")
         show_only_attacks = st.checkbox("Show only attacks", value=False)
         min_p = st.slider("Min P(attack)", 0.0, 1.0, 0.0, 0.01)
+
+        st.divider()
+        st.markdown("## Demo Mode")
+
+        demo_attack_type = st.selectbox("Demo attack_type", ["dos", "probe", "r2l", "u2r", "unknown"], index=0)
+        demo_severity = st.selectbox("Severity", ["low", "medium", "high", "critical"], index=2)
+        demo_proba = st.slider("Demo P(attack)", 0.0, 1.0, 0.97, 0.01)
+
+        if st.button("Inject demo alert", use_container_width=True):
+            demo = {
+                "ts": str(time.time()),
+                "uid": f"DEMO_{uuid.uuid4().hex[:10].upper()}",
+                "orig_h": "10.0.0.5",
+                "resp_h": "10.0.0.1",
+                "resp_p": "80",
+                "proto": "tcp",
+                "conn_state": "S0",
+                "proba_attack": float(demo_proba),
+                "is_attack": 1,
+                "attack_type": demo_attack_type,
+                "severity": demo_severity,
+                "note": "demo_injected",
+            }
+            ALERTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+            with ALERTS_PATH.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(demo) + "\n")
+            st.success(f"Injected: {demo['uid']}")
+            if st.button("Clear alerts.jsonl", use_container_width=True):
+                ALERTS_PATH.write_text("", encoding="utf-8")
+                st.success("Cleared alerts.jsonl")
 
         st.divider()
         st.markdown("## Debug")
